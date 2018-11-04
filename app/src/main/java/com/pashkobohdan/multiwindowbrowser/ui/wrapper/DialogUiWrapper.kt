@@ -1,6 +1,7 @@
 package com.pashkobohdan.multiwindowbrowser.ui.wrapper
 
 import android.app.Activity
+import android.content.Context
 
 class DialogUiWrapper(val activity: Activity) {
 
@@ -11,4 +12,6 @@ class DialogUiWrapper(val activity: Activity) {
     fun setRequestedOrientation(orientation: Int) {
         activity.requestedOrientation = orientation
     }
+
+    fun getContext(): Context = activity
 }

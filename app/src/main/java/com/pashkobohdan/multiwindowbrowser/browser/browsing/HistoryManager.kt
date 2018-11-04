@@ -10,7 +10,7 @@ class HistoryManager {
         if (cleanTop) {
             previousPages.clear()
         }
-        previousPages.add(page)
+        previousPages.push(page)
     }
 
     fun canGoBack(): Boolean = !previousPages.isEmpty()
@@ -19,5 +19,10 @@ class HistoryManager {
         if (!canGoBack()) throw IllegalArgumentException("Cannot go back")
 
         return previousPages.pop()
+    }
+
+    fun currentPage(): Page {
+        val peekedElement = if(previousPages.size > 0) previousPages.peek() else throw IllegalArgumentException("History is empty")
+        return peekedElement
     }
 }

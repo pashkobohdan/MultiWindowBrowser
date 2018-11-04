@@ -12,13 +12,17 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:name=".MultiwindowBrowserApplication">
-        <activity android:name=".ui.activities.BrowserActivity">
+        <activity android:name=".ui.activities.SplashActivity"
+            android:theme="@style/SplashTheme"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ui.activities.space.BrowserActivity" android:launchMode="singleTask"/>
+        <activity android:name=".ui.activities.browserSpaceList.BrowserSpaceListActivity" android:launchMode="standard"/>
     </application>
 
 </manifest>

@@ -3,7 +3,7 @@ package com.pashkobohdan.multiwindowbrowser.di.module
 import android.app.Activity
 import android.app.Application
 import android.content.Context
-import com.pashkobohdan.multiwindowbrowser.ui.activities.BrowserActivity
+import com.pashkobohdan.multiwindowbrowser.ui.activities.space.BrowserActivity
 import com.pashkobohdan.multiwindowbrowser.ui.listeners.EmptyActivityLifecycleCallbacks
 import com.pashkobohdan.multiwindowbrowser.ui.wrapper.DialogUiWrapper
 import dagger.Module
@@ -19,10 +19,12 @@ class AppModule(application: Application) {
     init {
         applicationContext = application
         application.registerActivityLifecycleCallbacks(object : EmptyActivityLifecycleCallbacks() {
-            override fun onActivityStarted(activity: Activity) {
-                applicationContext = activity
-                if (activity is BrowserActivity) {
-                    mainActivity = activity
+            override fun onActivityStarted(activity: Activity?) {
+                activity?.let {
+                    applicationContext = activity
+                    if (activity is BrowserActivity) {
+                        mainActivity = activity
+                    }
                 }
             }
         })

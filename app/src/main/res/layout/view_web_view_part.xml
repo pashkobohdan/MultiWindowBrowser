@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#fff"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/headerContainer"
+        android:animateLayoutChanges="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:background="@drawable/go_to_url_edittext_bg"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:layout_margin="6dp"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/searchEdit"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="12dp"
+                android:layout_marginRight="12dp"
+                android:background="@android:color/transparent"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif"
+                android:gravity="center_vertical"
+                android:imeOptions="actionGo"
+                android:lines="1"
+                android:inputType="textNoSuggestions"
+                android:maxLines="1"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:textSize="12sp"
+                tools:text="http://www.google.com" />
+
+        </LinearLayout>
+    </FrameLayout>
+
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:focusableInTouchMode="true">
+
+    </WebView>
+</LinearLayout>
