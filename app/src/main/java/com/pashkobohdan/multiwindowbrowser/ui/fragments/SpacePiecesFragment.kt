@@ -122,7 +122,11 @@ class SpacePiecesFragment : Fragment(), SpacePiecesUIHandler {
         uiCreator?.navigatedToUrlCallback = toDo
     }
 
-    override fun setGoToUrlOrSearchCallback1(toDo: (BrowserPiece, String) -> Unit) {
+    override fun setGoToUrlOrSearchCallback(toDo: (BrowserPiece, String) -> Unit) {
         uiCreator?.goToUrlOrSearchCallback = toDo
+    }
+
+    override fun setChangeActivePieceCallback(toDo: (BrowserPiece) -> Unit) {
+        uiCreator?.changeActivePieceCallback = toDo
     }
 }

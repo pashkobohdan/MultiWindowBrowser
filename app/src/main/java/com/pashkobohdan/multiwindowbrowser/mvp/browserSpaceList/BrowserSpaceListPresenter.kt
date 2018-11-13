@@ -69,8 +69,12 @@ class BrowserSpaceListPresenter @Inject constructor() : AbstractPresenter<Browse
 
     fun saveAnotherOneSpaceAndOpen(type: NewBrowserSpaceType) {
         val newBrowserSpace = when (type) {
-            NewBrowserSpaceType.HORIZONTAL -> HorizontalPartsBrowserSpace()
-            NewBrowserSpaceType.VERTICAL -> VerticalPartsBrowserSpace()
+            NewBrowserSpaceType.HORIZONTAL -> HorizontalPartsBrowserSpace().apply {
+                createNewPiece(Page("http://www.google.com"))
+            }
+            NewBrowserSpaceType.VERTICAL -> VerticalPartsBrowserSpace().apply {
+                createNewPiece(Page("http://www.google.com"))
+            }
             NewBrowserSpaceType.HORIZONTAL_WITH_DEFAULT_SITES -> HorizontalPartsBrowserSpace().apply {
                 createNewPiece(Page("http://www.google.com"))
                 createNewPiece(Page("https://www.youtube.com/"))

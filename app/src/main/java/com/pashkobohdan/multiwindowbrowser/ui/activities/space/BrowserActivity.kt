@@ -15,7 +15,6 @@ import com.pashkobohdan.multiwindowbrowser.ui.activities.browserSpaceList.Browse
 import com.pashkobohdan.multiwindowbrowser.ui.common.activity.AbstractScreenActivity
 import com.pashkobohdan.multiwindowbrowser.ui.doIfSeveralFingersTouch
 import com.pashkobohdan.multiwindowbrowser.ui.fragments.SpacePiecesFragment
-import com.pashkobohdan.multiwindowbrowser.ui.fragments.spacePieces.SpacePiecesUIHandler
 import kotlinx.android.synthetic.main.activity_browser.*
 
 
@@ -23,8 +22,6 @@ class BrowserActivity : AbstractScreenActivity<BrowserPresenter>(), BrowserView 
 
     @InjectPresenter
     lateinit var presenter: BrowserPresenter
-
-    lateinit var spacePiecesUIHandler: SpacePiecesUIHandler
 
     @ProvidePresenter
     fun providePresenter(): BrowserPresenter {
@@ -46,7 +43,7 @@ class BrowserActivity : AbstractScreenActivity<BrowserPresenter>(), BrowserView 
         } else {
             spacePiecesFragment = savedFragment
         }
-        spacePiecesUIHandler = spacePiecesFragment
+        presenter.spacePiecesUIHandler = spacePiecesFragment
         //
 
         addPieceButton.setOnClickListener { presenter.addNewPiece() }
@@ -81,48 +78,44 @@ class BrowserActivity : AbstractScreenActivity<BrowserPresenter>(), BrowserView 
     }
 
     override fun initUiCreator(browserSpace: BrowserSpace) {
-        spacePiecesUIHandler.browserSpace = browserSpace
-        spacePiecesUIHandler.setPageCompletedCallback {
-            //TODO add time comparing. Don't do more than 1 screenshot by 30-60 sec
-            makePrintScreenForSave()
-        }
-        spacePiecesUIHandler.setNavigatedToNewUrlCallback { browserPiece, url ->
-            //TODO check what's going on in presenter !'
-            presenter.navigatedToUrl(browserPiece, url)
-        }
-        spacePiecesUIHandler.setGoToUrlOrSearchCallback1 { browserPiece, url ->
-            //TODO check what's going on in presenter !'
-            presenter.goToUrlOrSearch(browserPiece, url)
-        }
-
-//        uiCreator = BrowserUiCreatorFactory.createUiCreator(browserSpace)
-//        uiCreator.pageCompletedCallback = { makePrintScreenForSave() }
-//        uiCreator.navigatedToUrlCallback = { piece, url -> presenter.navigatedToUrl(piece, url) }
-//
-//        val browserSpaceView = uiCreator.inflateRootView()
-//        browserSpaceRoot.addView(browserSpaceView)
-//        browserSpaceView.doOnceAfterCreate {
-//            browserSpace.browserPieces.forEach { uiCreator.tryRefreshPieceSize(it) }
+//        spacePiecesUIHandler.browserSpace = browserSpace
+//        spacePiecesUIHandler.setPageCompletedCallback {
+//            //TODO add time comparing. Don't do more than 1 screenshot by 30-60 sec
+//            makePrintScreenForSave()
+//        }
+//        spacePiecesUIHandler.setNavigatedToNewUrlCallback { browserPiece, url ->
+//            //TODO check what's going on in presenter !'
+//            presenter.navigatedToUrl(browserPiece, url)
+//        }
+//        spacePiecesUIHandler.setGoToUrlOrSearchCallback { browserPiece, url ->
+//            //TODO check what's going on in presenter !'
+//            presenter.goToUrlOrSearch(browserPiece, url)
 //        }
     }
 
     override fun removePiece(browserPiece: BrowserPiece) {
-        spacePiecesUIHandler.removePiece(browserPiece)
+//        spacePiecesUIHandler.removePiece(browserPiece)
     }
 
     override fun addPiece(browserPiece: BrowserPiece) {
-        spacePiecesUIHandler.addPiece(browserPiece)
+//        spacePiecesUIHandler.addPiece(browserPiece)
     }
 
     override fun goToUrl(piece: BrowserPiece, url: String) {
-        spacePiecesUIHandler.goToNewUrl(piece, url)
+//        spacePiecesUIHandler.goToNewUrl(piece, url)
     }
 
-    private fun makePrintScreenForSave() {
+    override fun makePrintScreenForSave() {
         browserSpaceRoot.setDrawingCacheEnabled(true)
         browserSpaceRoot.buildDrawingCache()
         val bm = browserSpaceRoot.getDrawingCache()
         presenter.saveSpacePreviewImage(bm)
+    }
+
+    override fun onBackPressed() {
+        if(!presenter.tryGoBackOnActivePiece()) {
+            super.onBackPressed()
+        }
     }
 
     companion object {

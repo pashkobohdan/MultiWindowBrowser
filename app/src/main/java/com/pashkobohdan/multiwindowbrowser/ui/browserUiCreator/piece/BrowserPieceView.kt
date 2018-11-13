@@ -27,6 +27,7 @@ class BrowserPieceView : LinearLayout {
     var navigatedToUrlCallback: (String) -> Unit = {}
     var goToNewUrlOrSearchCallback: (String) -> Unit = {}
     var pageLoadingCompletedCallback: (String) -> Unit = {}//TODO add !
+    var activatePieceCallback: () -> Unit = {}
 
     private val view: View = inflate(context, R.layout.view_web_view_part, this)
 
@@ -40,6 +41,9 @@ class BrowserPieceView : LinearLayout {
                 return@setOnKeyListener true
             }
             return@setOnKeyListener false;
+        }
+        view.touchableRoot.onInterceptTouchListener = { event ->
+            activatePieceCallback()
         }
 
         val webView = view.webView
@@ -84,7 +88,7 @@ class BrowserPieceView : LinearLayout {
 
 //        webView.settings.userAgentString = "Chrome"
 
-        webView.webViewClient = WebViewClientImpl( {newUrl->
+        webView.webViewClient = WebViewClientImpl({ newUrl ->
             //            browserPiece.historyManager.navigatedToUrl(Page(newUrl))//TODO make sure to do it in presenter
             navigatedToUrlCallback(newUrl)
             setCurrentUrl(newUrl)
@@ -92,8 +96,8 @@ class BrowserPieceView : LinearLayout {
 
         webView.webChromeClient = object : WebChromeClient() {
 
-            var mCustomView : View?=null
-            var mCustomViewCallback: WebChromeClient.CustomViewCallback?=null
+            var mCustomView: View? = null
+            var mCustomViewCallback: WebChromeClient.CustomViewCallback? = null
 
             override fun onHideCustomView() {
                 if (mCustomView != null) {
@@ -101,10 +105,9 @@ class BrowserPieceView : LinearLayout {
                     view.fullscreenContentContainer.visibility = View.GONE
                     mCustomViewCallback?.onCustomViewHidden();
                     mCustomView = null;
-                    webView.visibility = View.VISIBLE
+                    contentContainer.visibility = View.VISIBLE
                 }
             }
-
 
 
             override fun onShowCustomView(paramView: View, callback: WebChromeClient.CustomViewCallback) {
@@ -113,7 +116,7 @@ class BrowserPieceView : LinearLayout {
                 } else {
                     mCustomView = paramView;
                     mCustomViewCallback = callback;
-                    webView.visibility = View.GONE
+                    contentContainer.visibility = View.GONE
                     view.fullscreenContentContainer.addView(paramView)
                     view.fullscreenContentContainer.visibility = View.VISIBLE
                 }

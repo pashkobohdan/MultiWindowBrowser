@@ -21,4 +21,6 @@ interface BrowserView : AbstractScreenView {
 
     fun goToUrl(piece: BrowserPiece, url: String)
 
+    fun makePrintScreenForSave()
+
 }

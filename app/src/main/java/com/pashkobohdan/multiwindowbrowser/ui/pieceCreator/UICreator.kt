@@ -25,11 +25,12 @@ abstract class UICreator : Serializable {
 
     private val pieceUiMap = mutableMapOf<BrowserPiece, BrowserPieceView>()
 
-    var rootView: ViewGroup?=null
+    var rootView: ViewGroup? = null
 
-    var pageCompletedCallback: (String)-> Unit = {}
-    var navigatedToUrlCallback: (BrowserPiece, String)-> Unit = { _, _ -> }
-    var goToUrlOrSearchCallback: (BrowserPiece, String)-> Unit = { _, _ -> }
+    var pageCompletedCallback: (String) -> Unit = {}
+    var navigatedToUrlCallback: (BrowserPiece, String) -> Unit = { _, _ -> }
+    var goToUrlOrSearchCallback: (BrowserPiece, String) -> Unit = { _, _ -> }
+    var changeActivePieceCallback: (BrowserPiece) -> Unit = { }
 
     protected val layoutInflater: LayoutInflater by lazy {
         return@lazy LayoutInflater.from(contextProvider.get())
@@ -43,7 +44,7 @@ abstract class UICreator : Serializable {
 
     abstract fun getSpaceSize(): Point
 
-    fun clean(){
+    fun clean() {
         pieceUiMap.clear()
         rootView = null
     }
@@ -61,6 +62,9 @@ abstract class UICreator : Serializable {
                 goToUrlOrSearchCallback(browserPiece, it)
             }
             pieceView.pageLoadingCompletedCallback = pageCompletedCallback
+            pieceView.activatePieceCallback = {
+                changeActivePieceCallback(browserPiece)
+            }
             //
 
             rootView?.addView(pieceView)
@@ -78,14 +82,14 @@ abstract class UICreator : Serializable {
 
     fun goToRootPage(browserPiece: BrowserPiece) {
         val pieceWebView = pieceUiMap[browserPiece]
-                ?:throw IllegalStateException("Map doesn't contain ${browserPiece}")
+                ?: throw IllegalStateException("Map doesn't contain ${browserPiece}")
         val url = browserPiece.historyManager.currentPage().url.getValidUrlOrGoogleSearch()
         pieceWebView.loadUrl(url)
     }
 
     fun refreshPieceSize(browserPiece: BrowserPiece) {
         val pieceWebView = pieceUiMap.get(browserPiece)
-                    ?: throw IllegalStateException("Map doesn't contain ${browserPiece}")
+                ?: throw IllegalStateException("Map doesn't contain ${browserPiece}")
 
         val allSpaceSize = getSpaceSize()
         val width = (allSpaceSize.x * browserPiece.size.width).toInt()

@@ -17,6 +17,7 @@ import com.pashkobohdan.multiwindowbrowser.interactor.spacePreview.SaveSpacePrev
 import com.pashkobohdan.multiwindowbrowser.mvp.browser.view.BrowserView
 import com.pashkobohdan.multiwindowbrowser.mvp.common.AbstractPresenter
 import com.pashkobohdan.multiwindowbrowser.preferences.AppPreferences
+import com.pashkobohdan.multiwindowbrowser.ui.fragments.spacePieces.SpacePiecesUIHandler
 import javax.inject.Inject
 
 @InjectViewState
@@ -34,6 +35,9 @@ class BrowserPresenter @Inject constructor() : AbstractPresenter<BrowserView>() 
     lateinit var appPreferences: AppPreferences
 
     private lateinit var browserSpace: BrowserSpace
+
+    lateinit var spacePiecesUIHandler: SpacePiecesUIHandler
+    lateinit var activePiece: BrowserPiece
 
     override fun onFirstViewAttach() {
         //TODO reading current space
@@ -63,7 +67,25 @@ class BrowserPresenter @Inject constructor() : AbstractPresenter<BrowserView>() 
                 spaceList.find { it.id == id }?.let { browserDTO ->
                     appPreferences.lastOpenSpaceId = id
                     browserSpace = BrowserSpaceToBrowserSpaceDTOConverter.convertToSpace(browserDTO)
-                    viewState.initUiCreator(browserSpace)
+//                    viewState.initUiCreator(browserSpace)
+
+                    activePiece = browserSpace.browserPieces.firstOrNull() ?: throw IllegalStateException("There's no piece in this space")
+                    spacePiecesUIHandler.browserSpace = browserSpace
+                    spacePiecesUIHandler.setPageCompletedCallback {
+                        //TODO add time comparing. Don't do more than 1 screenshot by 30-60 sec
+                        viewState.makePrintScreenForSave()
+                    }
+                    spacePiecesUIHandler.setNavigatedToNewUrlCallback { browserPiece, url ->
+                        //TODO check what's going on in presenter !'
+                        navigatedToUrl(browserPiece, url)
+                    }
+                    spacePiecesUIHandler.setGoToUrlOrSearchCallback { browserPiece, url ->
+                        //TODO check what's going on in presenter !'
+                        goToUrlOrSearch(browserPiece, url)
+                    }
+                    spacePiecesUIHandler.setChangeActivePieceCallback { browserPiece ->
+                        activePiece = browserPiece
+                    }
                 }
             }
 
@@ -81,7 +103,8 @@ class BrowserPresenter @Inject constructor() : AbstractPresenter<BrowserView>() 
     fun goToUrlOrSearch(piece: BrowserPiece, url: String) {
         val validUrl = url.getValidUrlOrGoogleSearch()
         navigatedToUrl(piece, validUrl)
-        viewState.goToUrl(piece, validUrl)
+//        viewState.goToUrl(piece, validUrl)
+        spacePiecesUIHandler.goToNewUrl(piece, validUrl)
     }
 
     private fun saveSpace() {
@@ -117,30 +140,29 @@ class BrowserPresenter @Inject constructor() : AbstractPresenter<BrowserView>() 
 
     fun addNewPiece() {
         val addedPiece = browserSpace.createNewPiece(Page(ROOT_PAGE))
-        viewState.addPiece(addedPiece)
+//        viewState.addPiece(addedPiece)
+        spacePiecesUIHandler.addPiece(addedPiece)
         saveSpace()
     }
 
     fun removeLastPiece() {
-        if(browserSpace.browserPieces.size > 1) {
+        if (browserSpace.browserPieces.size > 1) {
             val removingPiece = browserSpace.browserPieces.last()
             browserSpace.removeLastPiece(removingPiece)
-            viewState.removePiece(removingPiece)
+//            viewState.removePiece(removingPiece)
+            spacePiecesUIHandler.removePiece(removingPiece)
             saveSpace()
         } else {
             //TODO dialog for removing space or smth else
         }
     }
 
-    fun saveSpaceToCurrent() {
-        //TODO
-    }
-
-    fun saveSpaceToList() {
-        //TODO
-    }
-
-    fun goToSpaceList() {
-        //TODO
+    fun tryGoBackOnActivePiece(): Boolean {
+        if (activePiece.historyManager.canGoBack()) {
+            val previuosPage = activePiece.historyManager.back()
+            spacePiecesUIHandler.goToNewUrl(activePiece, previuosPage.url)
+            return true
+        }
+        return false
     }
 }

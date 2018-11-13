@@ -16,5 +16,7 @@ interface SpacePiecesUIHandler {
 
     fun setNavigatedToNewUrlCallback(toDo: (BrowserPiece, String) -> Unit)
 
-    fun setGoToUrlOrSearchCallback1(toDo: (BrowserPiece, String) -> Unit)
+    fun setGoToUrlOrSearchCallback(toDo: (BrowserPiece, String) -> Unit)
+
+    fun setChangeActivePieceCallback(toDo: (BrowserPiece) -> Unit)
 }
