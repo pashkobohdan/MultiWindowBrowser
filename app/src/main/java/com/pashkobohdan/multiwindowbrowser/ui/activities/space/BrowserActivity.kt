@@ -2,6 +2,7 @@ package com.pashkobohdan.multiwindowbrowser.ui.activities.space
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import com.arellomobile.mvp.presenter.InjectPresenter
 import com.arellomobile.mvp.presenter.ProvidePresenter
 import com.pashkobohdan.multiwindowbrowser.MultiwindowBrowserApplication
@@ -11,10 +12,10 @@ import com.pashkobohdan.multiwindowbrowser.browser.browserSpace.BrowserSpace
 import com.pashkobohdan.multiwindowbrowser.mvp.browser.BrowserPresenter
 import com.pashkobohdan.multiwindowbrowser.mvp.browser.view.BrowserView
 import com.pashkobohdan.multiwindowbrowser.ui.activities.browserSpaceList.BrowserSpaceListActivity
-import com.pashkobohdan.multiwindowbrowser.ui.browserUiCreator.BrowserUiCreatorFactory
 import com.pashkobohdan.multiwindowbrowser.ui.common.activity.AbstractScreenActivity
-import com.pashkobohdan.multiwindowbrowser.ui.doOnceAfterCreate
-import com.pashkobohdan.multiwindowbrowser.ui.pieceCreator.UICreator
+import com.pashkobohdan.multiwindowbrowser.ui.doIfSeveralFingersTouch
+import com.pashkobohdan.multiwindowbrowser.ui.fragments.SpacePiecesFragment
+import com.pashkobohdan.multiwindowbrowser.ui.fragments.spacePieces.SpacePiecesUIHandler
 import kotlinx.android.synthetic.main.activity_browser.*
 
 
@@ -23,7 +24,7 @@ class BrowserActivity : AbstractScreenActivity<BrowserPresenter>(), BrowserView 
     @InjectPresenter
     lateinit var presenter: BrowserPresenter
 
-    lateinit var uiCreator: UICreator
+    lateinit var spacePiecesUIHandler: SpacePiecesUIHandler
 
     @ProvidePresenter
     fun providePresenter(): BrowserPresenter {
@@ -35,8 +36,25 @@ class BrowserActivity : AbstractScreenActivity<BrowserPresenter>(), BrowserView 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_browser)
 
+        // Initialization pieces-containing fragment
+        val fm = fragmentManager
+        val savedFragment = fm.findFragmentByTag("pieces") as SpacePiecesFragment?
+        val spacePiecesFragment: SpacePiecesFragment
+        if (savedFragment == null) {
+            spacePiecesFragment = SpacePiecesFragment();
+            fm.beginTransaction().add(R.id.browserSpaceRoot, spacePiecesFragment, "pieces").commit()
+        } else {
+            spacePiecesFragment = savedFragment
+        }
+        spacePiecesUIHandler = spacePiecesFragment
+        //
+
         addPieceButton.setOnClickListener { presenter.addNewPiece() }
         removePieceButton.setOnClickListener { presenter.removeLastPiece() }
+
+        browserSpaceRoot.doIfSeveralFingersTouch(4, {
+            toolbar.visibility = if(toolbar.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        })
 
         openList.setOnClickListener {
             val intent = Intent(this, BrowserSpaceListActivity::class.java)
@@ -63,30 +81,41 @@ class BrowserActivity : AbstractScreenActivity<BrowserPresenter>(), BrowserView 
     }
 
     override fun initUiCreator(browserSpace: BrowserSpace) {
-        uiCreator = BrowserUiCreatorFactory.createUiCreator(browserSpace)
-        uiCreator.historyChangedCallback = { presenter.historyChanged() }
-        uiCreator.pageLoadedCallback = { makePrintScreenForSave() }
-        uiCreator.goToPageCallback = { piece, url -> presenter.goToPage(piece, url) }
-
-        val browserSpaceView = uiCreator.inflateRootView()
-        browserSpaceRoot.addView(browserSpaceView)
-        browserSpaceView.doOnceAfterCreate {
-            browserSpace.browserPieces.forEach { uiCreator.tryRefreshPieceSize(it) }
+        spacePiecesUIHandler.browserSpace = browserSpace
+        spacePiecesUIHandler.setPageCompletedCallback {
+            //TODO add time comparing. Don't do more than 1 screenshot by 30-60 sec
+            makePrintScreenForSave()
         }
+        spacePiecesUIHandler.setNavigatedToNewUrlCallback { browserPiece, url ->
+            //TODO check what's going on in presenter !'
+            presenter.navigatedToUrl(browserPiece, url)
+        }
+        spacePiecesUIHandler.setGoToUrlOrSearchCallback1 { browserPiece, url ->
+            //TODO check what's going on in presenter !'
+            presenter.goToUrlOrSearch(browserPiece, url)
+        }
+
+//        uiCreator = BrowserUiCreatorFactory.createUiCreator(browserSpace)
+//        uiCreator.pageCompletedCallback = { makePrintScreenForSave() }
+//        uiCreator.navigatedToUrlCallback = { piece, url -> presenter.navigatedToUrl(piece, url) }
+//
+//        val browserSpaceView = uiCreator.inflateRootView()
+//        browserSpaceRoot.addView(browserSpaceView)
+//        browserSpaceView.doOnceAfterCreate {
+//            browserSpace.browserPieces.forEach { uiCreator.tryRefreshPieceSize(it) }
+//        }
     }
 
     override fun removePiece(browserPiece: BrowserPiece) {
-        //TODO
+        spacePiecesUIHandler.removePiece(browserPiece)
     }
 
-    override fun refreshPieces(pieceList: Set<BrowserPiece>) {
-        pieceList.forEach {
-            uiCreator.tryRefreshPieceSize(it)
-        }
+    override fun addPiece(browserPiece: BrowserPiece) {
+        spacePiecesUIHandler.addPiece(browserPiece)
     }
 
     override fun goToUrl(piece: BrowserPiece, url: String) {
-        uiCreator.goToUrl(piece, url)
+        spacePiecesUIHandler.goToNewUrl(piece, url)
     }
 
     private fun makePrintScreenForSave() {

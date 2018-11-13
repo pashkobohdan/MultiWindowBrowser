@@ -5,13 +5,10 @@ import android.graphics.Point
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.WebSettings
 import android.widget.LinearLayout
 import com.pashkobohdan.multiwindowbrowser.MultiwindowBrowserApplication
 import com.pashkobohdan.multiwindowbrowser.R
-import com.pashkobohdan.multiwindowbrowser.WebViewClientImpl
 import com.pashkobohdan.multiwindowbrowser.browser.browserPiece.BrowserPiece
-import com.pashkobohdan.multiwindowbrowser.browser.browsing.Page
 import com.pashkobohdan.multiwindowbrowser.browser.utils.getValidUrlOrGoogleSearch
 import com.pashkobohdan.multiwindowbrowser.ui.browserUiCreator.piece.BrowserPieceView
 import com.pashkobohdan.multiwindowbrowser.ui.pieceCreator.webClient.DefaultWebClient
@@ -28,11 +25,11 @@ abstract class UICreator : Serializable {
 
     private val pieceUiMap = mutableMapOf<BrowserPiece, BrowserPieceView>()
 
-    lateinit var rootView: ViewGroup
+    var rootView: ViewGroup?=null
 
-    var historyChangedCallback: ()-> Unit = {}
-    var pageLoadedCallback: ()-> Unit = {}
-    var goToPageCallback: (BrowserPiece, String)-> Unit = {_, _ -> }
+    var pageCompletedCallback: (String)-> Unit = {}
+    var navigatedToUrlCallback: (BrowserPiece, String)-> Unit = { _, _ -> }
+    var goToUrlOrSearchCallback: (BrowserPiece, String)-> Unit = { _, _ -> }
 
     protected val layoutInflater: LayoutInflater by lazy {
         return@lazy LayoutInflater.from(contextProvider.get())
@@ -44,68 +41,51 @@ abstract class UICreator : Serializable {
 
     abstract fun inflateRootView(): View
 
-    abstract fun refreshSpace()
-
     abstract fun getSpaceSize(): Point
 
-    private fun createViewForPiece(browserPiece: BrowserPiece): BrowserPieceView {
+    fun clean(){
+        pieceUiMap.clear()
+        rootView = null
+    }
+
+    fun createViewForPiece(browserPiece: BrowserPiece): BrowserPieceView {
         val pieceView = layoutInflater.inflate(R.layout.web_view_part, null)
         if (pieceView is BrowserPieceView) {
             pieceUiMap.put(browserPiece, pieceView)
-            initWebView(pieceView, browserPiece)
-            rootView.addView(pieceView)
+
+            // Init one piece listeners
+            pieceView.navigatedToUrlCallback = {
+                navigatedToUrlCallback(browserPiece, it)
+            }
+            pieceView.goToNewUrlOrSearchCallback = {
+                goToUrlOrSearchCallback(browserPiece, it)
+            }
+            pieceView.pageLoadingCompletedCallback = pageCompletedCallback
+            //
+
+            rootView?.addView(pieceView)
             return pieceView
         } else {
             throw IllegalStateException("There's no BrowserPieceView in this layout")
         }
     }
 
-    private fun goToRootPage(browserPiece: BrowserPiece) {
+    fun removePiece(browserPiece: BrowserPiece) {
+        val view = pieceUiMap.get(browserPiece)
+        rootView?.removeView(view)
+        pieceUiMap.remove(browserPiece)
+    }
+
+    fun goToRootPage(browserPiece: BrowserPiece) {
         val pieceWebView = pieceUiMap[browserPiece]
-        if (pieceWebView == null) {
-            throw IllegalStateException("Web view for this piece isn't exist")
-        }
+                ?:throw IllegalStateException("Map doesn't contain ${browserPiece}")
         val url = browserPiece.historyManager.currentPage().url.getValidUrlOrGoogleSearch()
         pieceWebView.loadUrl(url)
-        pieceWebView.setCurrentUrl(url)
     }
 
-    private fun initWebView(view: BrowserPieceView, browserPiece: BrowserPiece) {
-        val webViewClient = WebViewClientImpl( {newUrl->
-            browserPiece.historyManager.goToPage(Page(newUrl))
-            historyChangedCallback()
-            view.setCurrentUrl(newUrl)
-        }, {
-            pageLoadedCallback()
-        })
-
-        view.goToUrlCallback = {
-            goToPageCallback(browserPiece, it)
-        }
-
-        view.webView.getSettings().setPluginState(WebSettings.PluginState.ON)
-        view.webView.getSettings().setJavaScriptEnabled(true)
-        view.webView.getSettings().setAppCacheEnabled(true)
-        view.webView.setInitialScale(1)
-        view.webView.getSettings().setLoadWithOverviewMode(true)
-        view.webView.getSettings().setUseWideViewPort(true)
-
-        view.webView.webViewClient = webViewClient
-        view.webView.webChromeClient = defaultWebClientProvider.get()
-    }
-
-    fun tryRefreshPieceSize(browserPiece: BrowserPiece) {
-        val pieceWebView: BrowserPieceView
-        if ( pieceUiMap.contains(browserPiece)) {
-            pieceWebView = pieceUiMap.get(browserPiece)
+    fun refreshPieceSize(browserPiece: BrowserPiece) {
+        val pieceWebView = pieceUiMap.get(browserPiece)
                     ?: throw IllegalStateException("Map doesn't contain ${browserPiece}")
-        } else {
-            pieceWebView = createViewForPiece(browserPiece)
-            goToRootPage(browserPiece)
-        }
-//        if (pieceWebView == null) {
-//            throw IllegalStateException("Web view for this piece isn't exist")
-//        }
 
         val allSpaceSize = getSpaceSize()
         val width = (allSpaceSize.x * browserPiece.size.width).toInt()
@@ -119,6 +99,5 @@ abstract class UICreator : Serializable {
             throw IllegalStateException("Web view for this piece isn't exist")
         }
         pieceWebView.loadUrl(url)
-        pieceWebView.setCurrentUrl(url)
     }
 }

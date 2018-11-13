@@ -61,7 +61,7 @@ class BrowserPresenter @Inject constructor() : AbstractPresenter<BrowserView>() 
         spaceListUseCase.execute(object : DefaultObserver<List<BrowserSpaceDTO>>() {
             override fun onNext(spaceList: List<BrowserSpaceDTO>) {
                 spaceList.find { it.id == id }?.let { browserDTO ->
-                    appPreferences.lastOpenSpaceId= id
+                    appPreferences.lastOpenSpaceId = id
                     browserSpace = BrowserSpaceToBrowserSpaceDTOConverter.convertToSpace(browserDTO)
                     viewState.initUiCreator(browserSpace)
                 }
@@ -73,14 +73,14 @@ class BrowserPresenter @Inject constructor() : AbstractPresenter<BrowserView>() 
         })
     }
 
-    fun historyChanged() {
+    fun navigatedToUrl(piece: BrowserPiece, url: String) {
+        piece.historyManager.goToPage(Page(url))
         saveSpace()
     }
 
-    fun goToPage(piece: BrowserPiece, url: String) {
+    fun goToUrlOrSearch(piece: BrowserPiece, url: String) {
         val validUrl = url.getValidUrlOrGoogleSearch()
-        piece.historyManager.goToPage(Page(validUrl))
-        saveSpace()
+        navigatedToUrl(piece, validUrl)
         viewState.goToUrl(piece, validUrl)
     }
 
@@ -116,16 +116,20 @@ class BrowserPresenter @Inject constructor() : AbstractPresenter<BrowserView>() 
     }
 
     fun addNewPiece() {
-        browserSpace.createNewPiece(Page(ROOT_PAGE))
-        viewState.refreshPieces(browserSpace.browserPieces)
+        val addedPiece = browserSpace.createNewPiece(Page(ROOT_PAGE))
+        viewState.addPiece(addedPiece)
         saveSpace()
     }
 
     fun removeLastPiece() {
-        browserSpace.removeLastPiece()
-        //TODO add removing last item
-        viewState.refreshPieces(browserSpace.browserPieces)
-        saveSpace()
+        if(browserSpace.browserPieces.size > 1) {
+            val removingPiece = browserSpace.browserPieces.last()
+            browserSpace.removeLastPiece(removingPiece)
+            viewState.removePiece(removingPiece)
+            saveSpace()
+        } else {
+            //TODO dialog for removing space or smth else
+        }
     }
 
     fun saveSpaceToCurrent() {

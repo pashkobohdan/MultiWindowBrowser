@@ -1,12 +1,18 @@
 package com.pashkobohdan.multiwindowbrowser.ui.browserUiCreator.piece
 
 import android.content.Context
+import android.os.Bundle
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.View
+import android.webkit.CookieManager
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.widget.LinearLayout
 import com.pashkobohdan.multiwindowbrowser.R
+import com.pashkobohdan.multiwindowbrowser.WebViewClientImpl
 import com.pashkobohdan.multiwindowbrowser.ui.doIfSeveralFingersTouch
 import com.pashkobohdan.multiwindowbrowser.ui.hideKeyboardFrom
 import com.pashkobohdan.multiwindowbrowser.ui.listeners.AnimatorEndListener
@@ -18,24 +24,27 @@ class BrowserPieceView : LinearLayout {
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
     constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
 
-    var goToUrlCallback: (String) -> Unit = {}
+    var navigatedToUrlCallback: (String) -> Unit = {}
+    var goToNewUrlOrSearchCallback: (String) -> Unit = {}
+    var pageLoadingCompletedCallback: (String) -> Unit = {}//TODO add !
 
-    val view: View
+    private val view: View = inflate(context, R.layout.view_web_view_part, this)
+
+    var webView: WebView = view.webView
 
     init {
-        view = inflate(context, R.layout.view_web_view_part, this)
-
-
         view.searchEdit.setOnKeyListener { _, keyCode, event ->
             if ((event.action == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                goToUrlCallback(view.searchEdit.text.toString())
+                goToNewUrlOrSearchCallback(view.searchEdit.text.toString())
                 view.searchEdit.hideKeyboardFrom()
                 return@setOnKeyListener true
             }
             return@setOnKeyListener false;
         }
 
-        view.webView.doIfSeveralFingersTouch(3, {
+        val webView = view.webView
+
+        webView.doIfSeveralFingersTouch(3, {
             if (headerContainer.visibility == View.VISIBLE) {
                 headerContainer
                         .animate()
@@ -54,20 +63,88 @@ class BrowserPieceView : LinearLayout {
                         })
             }
         })
+
+
+
+        webView.settings.pluginState = WebSettings.PluginState.ON
+        webView.settings.javaScriptEnabled = true
+        webView.settings.setAppCacheEnabled(true)
+        webView.setInitialScale(1)
+        webView.settings.loadWithOverviewMode = true
+        webView.settings.useWideViewPort = true
+
+        webView.settings.setAppCacheEnabled(true)
+        webView.settings.setSupportMultipleWindows(true)
+        webView.settings.javaScriptCanOpenWindowsAutomatically = true
+
+
+        //Cookie manager for the webview
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true)
+
+//        webView.settings.userAgentString = "Chrome"
+
+        webView.webViewClient = WebViewClientImpl( {newUrl->
+            //            browserPiece.historyManager.navigatedToUrl(Page(newUrl))//TODO make sure to do it in presenter
+            navigatedToUrlCallback(newUrl)
+            setCurrentUrl(newUrl)
+        }, pageLoadingCompletedCallback)
+
+        webView.webChromeClient = object : WebChromeClient() {
+
+            var mCustomView : View?=null
+            var mCustomViewCallback: WebChromeClient.CustomViewCallback?=null
+
+            override fun onHideCustomView() {
+                if (mCustomView != null) {
+                    view.fullscreenContentContainer.removeView(mCustomView)
+                    view.fullscreenContentContainer.visibility = View.GONE
+                    mCustomViewCallback?.onCustomViewHidden();
+                    mCustomView = null;
+                    webView.visibility = View.VISIBLE
+                }
+            }
+
+
+
+            override fun onShowCustomView(paramView: View, callback: WebChromeClient.CustomViewCallback) {
+                if (mCustomView != null) {
+                    callback.onCustomViewHidden();
+                } else {
+                    mCustomView = paramView;
+                    mCustomViewCallback = callback;
+                    webView.visibility = View.GONE
+                    view.fullscreenContentContainer.addView(paramView)
+                    view.fullscreenContentContainer.visibility = View.VISIBLE
+                }
+            }
+        }
     }
 
-    fun setCurrentUrl(url: String) {
+    private fun setCurrentUrl(url: String) {
         view.searchEdit.setText(url)
     }
 
     fun loadUrl(url: String) {
-        view.webView.loadUrl(url)
+        setCurrentUrl(url)
+        webView.loadUrl(url)
     }
 
-    var webView: WebView = view.webView
+    fun onSaveInstanceState(outState: Bundle) {
+        webView.saveState(outState)
+        outState.putParcelable(SEARCH_EDIT_TEXT_STATE_KEY, view.searchEdit.onSaveInstanceState())
+    }
+
+    fun onViewStateRestored(savedInstanceState: Bundle) {
+        webView.restoreState(savedInstanceState)
+        (savedInstanceState.getParcelable(SEARCH_EDIT_TEXT_STATE_KEY) as Parcelable?)?.let {
+            view.searchEdit.onRestoreInstanceState(it)
+        }
+    }
 
     companion object {
 
         const val MIN_THREE_FINGERS_TAP_DELAY_MS = 200
+        const val SEARCH_EDIT_TEXT_STATE_KEY = "searchEditStateKey"
     }
 }

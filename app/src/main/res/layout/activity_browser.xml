@@ -7,6 +7,7 @@
     tools:context=".ui.activities.space.BrowserActivity">
 
     <LinearLayout
+        android:id="@+id/toolbar"
         android:orientation="horizontal"
         android:background="@color/colorAccent"
         android:layout_width="match_parent"
@@ -30,8 +31,10 @@
             android:text="list"/>
     </LinearLayout>
 
-    <FrameLayout
+    <com.pashkobohdan.multiwindowbrowser.ui.TouchableFrameLayout
         android:id="@+id/browserSpaceRoot"
+        android:clickable="true"
+        android:focusable="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 

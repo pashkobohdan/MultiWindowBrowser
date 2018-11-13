@@ -26,11 +26,9 @@ abstract class BrowserSpace {
         return newPiece
     }
 
-    fun removeLastPiece() {
-        if(browserPieces.size > 1) {
-            browserPieces.remove(browserPieces.last())
+    fun removeLastPiece(browserPiece: BrowserPiece) {
+            browserPieces.remove(browserPiece)
             reInitPiecesAfterRemoving()
-        }
     }
 
     abstract fun initNewAddedPiece(newPiece: BrowserPiece)
